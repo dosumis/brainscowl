@@ -1,10 +1,10 @@
-organization  := dosumis"
+organization  := "dosumis"
 
 name          := "brainscowl"
 
 version       := "0.0.1"
 
-scalaVersion  := "2.12.2"
+scalaVersion  := "2.11.8" // scowl allegedly works with scala 2.12 - but tests failed
 
 scalacOptions := Seq("-unchecked", "-deprecation", "-encoding", "utf8")
 
@@ -18,10 +18,13 @@ javaOptions += "-Xmx6G"
 
 libraryDependencies ++= {
     //  TO CHECK: Is OWL API really needed or does in come with scowl?
+    //   "net.sourceforge.owlapi"     %  "owlapi-distribution" % "4.2.1",
+
     Seq(
-      "net.sourceforge.owlapi"     %  "owlapi-distribution" % "4.2.1",
-      "org.semanticweb.elk"    %   "elk-owlapi"          % "0.4.1",
-      "org.phenoscape"             %% "scowl"            % "1.1",
-      )
+      "org.semanticweb.elk"    %   "elk-owlapi"          % "0.4.1" withJavadoc(),
+      "org.phenoscape"             %% "scowl"            % "1.3" withJavadoc(),
+      "org.scalactic" %% "scalactic" % "3.0.1",      
+      "org.scalatest" %% "scalatest" % "3.0.1" % "test"  withJavadoc()
+      )  // Move scowl to 1.3??
 }
 
