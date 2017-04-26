@@ -16,8 +16,8 @@ Scala is a bit heavyweight though.  It's a bit too complex (& Java-like) for occ
 ### Sketch of scowlBrain
 
 ```scala
-var fu = BrainScowl('file path') # Opens ontology from file.
-var fu = BrainScowl('owl file uri', 'default base URI') Providing an owl file URI initilises ontology.
+var fu = BrainScowl("file path") # Opens ontology from file.
+var fu = BrainScowl("owl file uri", "default base URI") Providing an owl file URI initilises ontology.
 # Option to load from full URI
 fu.learn('URI') # Should follow imports. Only one learn allowed => no opaque mashing together.  Following imports means need a concept of ownership for OWL entities and axioms.  Edits should be only to directly loaded ontology.
 
@@ -27,7 +27,7 @@ fu.getTypes(Ind)
 fu.getParentClasses(Ind)
 fu.getAnnotations(AP, OWLEntity)
 
-fu.save('file path')
+fu.save("file path")
 fu.sleep()
 ```
 
