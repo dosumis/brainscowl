@@ -10,6 +10,7 @@ import org.semanticweb.owlapi.search.EntitySearcher
 import org.semanticweb.owlapi.model._
 import org.semanticweb.owlapi.formats.FunctionalSyntaxDocumentFormat
 import org.semanticweb.owlapi.formats.RDFXMLDocumentFormat
+import org.semanticweb.owlapi.formats.TurtleDocumentFormat
 
 // See Brain for how to use the following to roll class expressions from MS:
 //import org.coode.owlapi.manchesterowlsyntax.ManchesterOWLSyntaxClassExpressionParser
@@ -140,10 +141,23 @@ class BrainScowl (
         return oid.getOntologyIRI().get.toString()
       }
    
-     def save(file_path: String) {
+     def save(file_path: String, syntax: String  = "ofn") {
        // TBA: method for choosing syntax
-//        val syn = new FunctionalSyntaxDocumentFormat()
-        val syn = new RDFXMLDocumentFormat()
+        val syn = new FunctionalSyntaxDocumentFormat()
+
+        if (syntax == "ofn") {
+           val syn = new FunctionalSyntaxDocumentFormat()
+        }
+        else if (syntax == "rdfxml") {
+           val syn = new FunctionalSyntaxDocumentFormat()
+        }
+        else if (syntax == "ttl") {
+           val syn = new TurtleDocumentFormat()
+        }
+        else {
+          println("Unrecognised syntax specification " +syntax + ".Defaulting to functional syntax.")
+          // Probably better to raise exception here.
+        }
         val f = new File(file_path);
         manager.saveOntology(ontology, syn, IRI.create(f.toURI())); 
        
