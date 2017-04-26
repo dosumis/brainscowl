@@ -1,7 +1,6 @@
 package dosumis.brainscowl.test
 import dosumis.brainscowl.BrainScowl
 import scala.collection.JavaConversions._
-import org.scalatest._
 import org.phenoscape.scowl._
 
 // Quick and dirty tests.  

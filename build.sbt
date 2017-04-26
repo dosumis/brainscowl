@@ -21,10 +21,12 @@ libraryDependencies ++= {
     //   "net.sourceforge.owlapi"     %  "owlapi-distribution" % "4.2.1",
 
     Seq(
-      "org.semanticweb.elk"    %   "elk-owlapi"          % "0.4.1" withJavadoc(),
       "org.phenoscape"             %% "scowl"            % "1.3" withJavadoc(),
+      "org.semanticweb.elk"    %   "elk-owlapi"          % "0.4.3" withJavadoc(),
       "org.scalactic" %% "scalactic" % "3.0.1",      
-      "org.scalatest" %% "scalatest" % "3.0.1" % "test"  withJavadoc()
+      "org.scalatest" %% "scalatest" % "3.0.1"  withJavadoc()
       )  // Move scowl to 1.3??
 }
+
+initialCommands := "import dosumis.brainscowl._"
 

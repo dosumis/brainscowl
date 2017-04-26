@@ -12,7 +12,7 @@ import org.semanticweb.owlapi.formats.FunctionalSyntaxDocumentFormat
 import org.semanticweb.owlapi.formats.RDFXMLDocumentFormat
 
 // See Brain for how to use the following to roll class expressions from MS:
-import org.coode.owlapi.manchesterowlsyntax.ManchesterOWLSyntaxClassExpressionParser
+//import org.coode.owlapi.manchesterowlsyntax.ManchesterOWLSyntaxClassExpressionParser
 
 import scala.collection.JavaConversions._
 import collection.JavaConverters._
@@ -107,6 +107,10 @@ class BrainScowl (
    
    def getSpecTextAnnotationsOnEntity (query_short_form: String, ap_short_form: String) 
      : ArrayBuffer[String] = {
+     /** Returns a list of strings that are the values of annotations using 
+      *  the annotation property specified using ap_short_form on the owl entity 
+      *  specified using query_short_form.  */
+     // TODO - add test that value realy is text.
        val ann = this.getSpecAnnotationsOnEntity(query_short_form, ap_short_form)
        val out = ArrayBuffer[String]()
        for (a <- ann) {
@@ -141,7 +145,8 @@ class BrainScowl (
 //        val syn = new FunctionalSyntaxDocumentFormat()
         val syn = new RDFXMLDocumentFormat()
         val f = new File(file_path);
-        manager.saveOntology(ontology, syn, IRI.create(f.toURI()));
+        manager.saveOntology(ontology, syn, IRI.create(f.toURI())); 
+       
      }
      
      def sleep() {
