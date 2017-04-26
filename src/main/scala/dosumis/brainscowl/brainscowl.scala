@@ -48,30 +48,26 @@ class BrainScowl (
     }
     
     def this(iri_string: String, base_iri: String) {
-      this(file_path = "")
+      this(file_path = "", iri_string = iri_string, base_iri = base_iri)
     }
     
     val factory = OWLManager.getOWLDataFactory
     val manager = OWLManager.createOWLOntologyManager
     val simple_sfp = new SimpleShortFormProvider
-    var ontology = OWLManager.createOWLOntologyManager.createOntology() // This feels very wasteful!
+    var ontology = manager.createOntology() // This feels very wasteful!
     
     // Quick and dirty job on control structure here.  Needs some work. 
     // Feels like some code should be pushed into auxiliary constructors. 
     // TODO: investigate how scope works with auxilliary constructors.
     
     // https://github.com/owlcs/owlapi/blob/version4/contract/src/test/java/org/semanticweb/owlapi/examples/Examples.java#L1072
-    def annotateOntology(ap: OWLAnnotationProperty, v: OWLAnnotationValue) {
-      val ann = factory.getOWLAnnotation(ap, v)
-      //factory.getOWLAnnotationAssertionAxiom(this.ontology.asInstanceOf[OWLAnnotationSubject], ap, v)
-      // Use Ontology IRI in subject position? IRI.create(this.iri_string) ?
-    }
+
     // Should also probably add an argument that allows loading ontology from IRI.
     if (this.file_path.isEmpty) {
-        ontology = OWLManager.createOWLOntologyManager.createOntology(IRI.create(this.iri_string))
+        this.ontology = OWLManager.createOWLOntologyManager.createOntology(IRI.create(this.iri_string))
     }
     else {
-        ontology = manager.loadOntologyFromOntologyDocument(new File(file_path))
+        this.ontology = manager.loadOntologyFromOntologyDocument(new File(file_path))
     }
     
     var reasoner = new ElkReasonerFactory().createReasoner(ontology)
@@ -84,6 +80,13 @@ class BrainScowl (
       
     def add_axiom(owl_axiom: OWLAxiom) {
       this.manager.addAxiom(this.ontology, owl_axiom)
+    }
+    
+    def annotateOntology(ap: OWLAnnotationProperty, v: OWLAnnotationValue) {
+      // STUB
+      val ann = factory.getOWLAnnotation(ap, v)
+      //factory.getOWLAnnotationAssertionAxiom(this.ontology.asInstanceOf[OWLAnnotationSubject], ap, v)
+      // Use Ontology IRI in subject position? IRI.create(this.iri_string) ?
     }
     
     def getClass(short_form: String): OWLClass = {
