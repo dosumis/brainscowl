@@ -11,6 +11,7 @@ import org.semanticweb.owlapi.model._
 import org.semanticweb.owlapi.formats.FunctionalSyntaxDocumentFormat
 import org.semanticweb.owlapi.formats.RDFXMLDocumentFormat
 import org.semanticweb.owlapi.formats.TurtleDocumentFormat
+//import org.slf4j.impl.StaticLoggerBinder
 
 // See Brain for how to use the following to roll class expressions from MS:
 //import org.coode.owlapi.manchesterowlsyntax.ManchesterOWLSyntaxClassExpressionParser
@@ -94,6 +95,11 @@ class BrainScowl (
       return e.asOWLClass()
     }
     
+    def add_import(target: String) {
+      val importDeclaration=factory.getOWLImportsDeclaration(IRI.create(target))
+      manager.applyChange(new AddImport(ontology, importDeclaration))
+    }
+    
    def getAnnotationsOnEntity (query_short_form: String) 
    : Array[OWLAnnotation] = {
       val e = bi_sfp.getEntity(query_short_form)
@@ -146,16 +152,16 @@ class BrainScowl (
    
      def save(file_path: String, syntax: String  = "ofn") {
        // TBA: method for choosing syntax
-        val syn = new FunctionalSyntaxDocumentFormat()
-
+        var syn : OWLDocumentFormat =  new FunctionalSyntaxDocumentFormat()
+        
         if (syntax == "ofn") {
-           val syn = new FunctionalSyntaxDocumentFormat()
+           syn = new FunctionalSyntaxDocumentFormat()
         }
         else if (syntax == "rdfxml") {
-           val syn = new FunctionalSyntaxDocumentFormat()
+           syn = new RDFXMLDocumentFormat()
         }
         else if (syntax == "ttl") {
-           val syn = new TurtleDocumentFormat()
+           syn = new TurtleDocumentFormat()
         }
         else {
           println("Unrecognised syntax specification " +syntax + ".Defaulting to functional syntax.")
