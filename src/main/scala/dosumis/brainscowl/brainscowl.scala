@@ -11,7 +11,7 @@ import org.semanticweb.owlapi.model._
 import org.semanticweb.owlapi.formats.FunctionalSyntaxDocumentFormat
 import org.semanticweb.owlapi.formats.RDFXMLDocumentFormat
 import org.semanticweb.owlapi.formats.TurtleDocumentFormat
-//import org.slf4j.impl.StaticLoggerBinder
+//import org.slf4j.impl.StaticLoggerBinder // TODO: Add logger import to build.sbt
 
 // See Brain for how to use the following to roll class expressions from MS:
 //import org.coode.owlapi.manchesterowlsyntax.ManchesterOWLSyntaxClassExpressionParser
@@ -83,11 +83,9 @@ class BrainScowl (
       this.manager.addAxiom(this.ontology, owl_axiom)
     }
     
-    def annotateOntology(ap: OWLAnnotationProperty, v: OWLAnnotationValue) {
-      // STUB
-      val ann = factory.getOWLAnnotation(ap, v)
-      //factory.getOWLAnnotationAssertionAxiom(this.ontology.asInstanceOf[OWLAnnotationSubject], ap, v)
-      // Use Ontology IRI in subject position? IRI.create(this.iri_string) ?
+    def annotateOntology(ann: OWLAnnotation) {
+      val oa = new AddOntologyAnnotation(this.ontology, ann)
+      this.manager.applyChange(oa)
     }
     
     def getClass(short_form: String): OWLClass = {
@@ -138,17 +136,19 @@ class BrainScowl (
     }
 
     def get_version_iri(): String = {
-       //* Wot is says on' tin.  Returns string*/
+       //* Wot it says on' tin.  Returns string*/
         val oid = this.ontology.getOntologyID()
         val version_iri = oid.getVersionIRI().get
         return version_iri.toString()    
      }
       
      def get_ontology_iri(): String = {
-       //* Wot is says on' tin.  Returns string*/
+       //* Wot it says on' tin.  Returns string*/
         val oid = this.ontology.getOntologyID()
         return oid.getOntologyIRI().get.toString()
       }
+     
+
    
      def save(file_path: String, syntax: String  = "ofn") {
        // TBA: method for choosing syntax
