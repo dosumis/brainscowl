@@ -71,7 +71,8 @@ class BrainScowl (
         this.ontology = manager.loadOntologyFromOntologyDocument(new File(file_path))
     }
     
-    var reasoner = new ElkReasonerFactory().createReasoner(ontology)
+    // see https://github.com/liveontologies/elk-reasoner/wiki/ElkOwlApixs
+    var reasoner = new ElkReasonerFactory().createReasoner(ontology)  //TODO: work out how to hook this up to logger.
     reasoner.precomputeInferences(InferenceType.CLASS_HIERARCHY)
 
     private var onts = collection.mutable.Set(ontology) 
