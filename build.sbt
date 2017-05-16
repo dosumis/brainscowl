@@ -25,7 +25,7 @@ libraryDependencies ++= {
       "org.semanticweb.elk"    %   "elk-owlapi"          % "0.4.3" withJavadoc(),
       "org.scalactic" %% "scalactic" % "3.0.1",      
       "org.scalatest" %% "scalatest" % "3.0.1"  withJavadoc()
-      )  // Move scowl to 1.3??
+      )  
 }
 
 initialCommands := "import dosumis.brainscowl._"
