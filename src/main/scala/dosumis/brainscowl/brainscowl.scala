@@ -7,6 +7,7 @@ import org.semanticweb.owlapi.model.IRI
 import org.semanticweb.owlapi.util.SimpleShortFormProvider
 import org.semanticweb.owlapi.util.BidirectionalShortFormProviderAdapter
 import org.semanticweb.owlapi.search.EntitySearcher
+import org.semanticweb.owlapi.expression.ShortFormEntityChecker
 import org.semanticweb.owlapi.model._
 import org.semanticweb.owlapi.formats.FunctionalSyntaxDocumentFormat
 import org.semanticweb.owlapi.formats.RDFXMLDocumentFormat
@@ -14,7 +15,10 @@ import org.semanticweb.owlapi.formats.TurtleDocumentFormat
 //import org.slf4j.impl.StaticLoggerBinder // TODO: Add logger import to build.sbt
 
 // See Brain for how to use the following to roll class expressions from MS:
-//import org.coode.owlapi.manchesterowlsyntax.ManchesterOWLSyntaxClassExpressionParser
+// in 3.5: import org.coode.owlapi.manchesterowlsyntax.ManchesterOWLSyntaxClassExpressionParser
+import org.semanticweb.owlapi.util.mansyntax.ManchesterOWLSyntaxParser
+// TODO Need to clarify plan for BrainScowl.
+// EntitySearcher in OWL-API 4 has made finding things easier.
 
 import scala.collection.JavaConversions._
 import collection.JavaConverters._
@@ -59,7 +63,8 @@ class BrainScowl (
     val factory = OWLManager.getOWLDataFactory
     val manager = OWLManager.createOWLOntologyManager
     val simple_sfp = new SimpleShortFormProvider
-    var ontology = manager.createOntology() // This feels very wasteful!
+
+    
     
     // Quick and dirty job on control structure here.  Needs some work. 
     // Feels like some code should be pushed into auxiliary constructors. 
@@ -68,12 +73,14 @@ class BrainScowl (
     // https://github.com/owlcs/owlapi/blob/version4/contract/src/test/java/org/semanticweb/owlapi/examples/Examples.java#L1072
 
     // Should also probably add an argument that allows loading ontology from IRI.
-    if (this.file_path.isEmpty) {
-        this.ontology = OWLManager.createOWLOntologyManager.createOntology(IRI.create(this.iri_string))
+    var ontology = if (this.file_path.isEmpty) {
+        OWLManager.createOWLOntologyManager.createOntology(IRI.create(this.iri_string))
+      } else {
+        manager.loadOntologyFromOntologyDocument(new File(file_path))
     }
-    else {
-        this.ontology = manager.loadOntologyFromOntologyDocument(new File(file_path))
-    }
+    
+    // TODO: make a lookup by label - ideally one that auto-updates
+    // How to get all entities in ontology?
     
     // see https://github.com/liveontologies/elk-reasoner/wiki/ElkOwlApixs
     var reasoner = new ElkReasonerFactory().createReasoner(ontology)  //TODO: work out how to hook this up to logger.
@@ -134,16 +141,33 @@ class BrainScowl (
      return out
    }
     
-    def getSubClasses(short_form: String): Set[OWLClass]  = {
-      val e = this.bi_sfp.getEntity(short_form)
-      val c = e.asOWLClass()
+  
+   def ms_string_2_classExpression (ms_string: String) :OWLClassExpression = {
+     val ms_parser = OWLManager.createManchesterParser()  
+     ms_parser.setStringToParse(ms_string)
+     ms_parser.setDefaultOntology(this.ontology)
+     val ec  = new ShortFormEntityChecker(this.bi_sfp)
+     ms_parser.setOWLEntityChecker(ec)
+     return ms_parser.parseClassExpression()
+   }
+   
+//   def getEntityByLabel (label: String) :OWLEntity = {
+//   }
+   
+   // TODO: All of the following need to take class expressions!
+    def getSubClasses(ms_class_expression: String): Set[OWLClass]  = {
+      val c = this.ms_string_2_classExpression(ms_class_expression)
       return this.reasoner.getSubClasses(c, false).getFlattened
     }
     
-    def getSuperClasses(short_form: String): Set[OWLClass]  = {
-      val e = this.bi_sfp.getEntity(short_form)
-      val c = e.asOWLClass()
+    def getSuperClasses(ms_class_expression: String): Set[OWLClass]  = {
+      val c = this.ms_string_2_classExpression(ms_class_expression)
       return this.reasoner.getSuperClasses(c, false).getFlattened
+    }
+    
+    def getInstances(ms_class_expression: String): Set[OWLNamedIndividual]  = {
+      val c = this.ms_string_2_classExpression(ms_class_expression)
+      return this.reasoner.getInstances(c, false).getFlattened.asScala
     }
     
     def getTypes(iri_string :String = "", sfid :String = ""): 
