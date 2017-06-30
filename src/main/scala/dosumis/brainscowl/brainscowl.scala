@@ -19,7 +19,7 @@ import org.semanticweb.owlapi.formats.TurtleDocumentFormat
 import scala.collection.JavaConversions._
 import collection.JavaConverters._
 
-import collection.mutable._
+import collection.mutable.ArrayBuffer
 import java.io.File
 import java.util.Set
 
@@ -40,6 +40,10 @@ import java.util.Set
 // Constructor takes new ontology or creates one blank one. 
 // .learn method allows ontology to be loaded from string or IRI.  Overwriting existing?
 // class bar (var a: String = "", var b: String = "", var c: String = "") { def this(a: String) { this(a, "", "") }}
+
+
+// TODO: Add in URI string recognition, assuming http or https. 
+// => string values passed to methods may be short form or URI
 
 class BrainScowl (
     val file_path: String, val iri_string: String, val base_iri: String) {
@@ -134,6 +138,39 @@ class BrainScowl (
       val e = this.bi_sfp.getEntity(short_form)
       val c = e.asOWLClass()
       return this.reasoner.getSubClasses(c, false).getFlattened
+    }
+    
+    def getSuperClasses(short_form: String): Set[OWLClass]  = {
+      val e = this.bi_sfp.getEntity(short_form)
+      val c = e.asOWLClass()
+      return this.reasoner.getSuperClasses(c, false).getFlattened
+    }
+    
+    def getTypes(iri_string :String = "", sfid :String = ""): 
+      Iterable[OWLClassExpression] = {
+        // TODO: Better
+        /* iri_string: An iri string referencing an individual
+        ont: An owlAPI ontology object for an ontology that 
+        includes the referenced individual.
+        Returns an iterable set of class expressions
+        */
+        // Relies on 'if' clause returning a value.  That value must be an OWLIndividual
+        // for next part of code to work.
+        // Would be nicer with one arg that worked out if short_form or iri...
+        val i = 
+          if (!sfid.isEmpty) {
+            this.bi_sfp.getEntity(sfid).asOWLNamedIndividual
+          }
+          else if (!iri_string.isEmpty()) { 
+            val iri = IRI.create(iri_string)
+            this.factory.getOWLNamedIndividual(iri)
+          }
+        else {
+          this.factory.getOWLNamedIndividual(IRI.create("http://fu.bar"))
+          // Throw exception here!
+            //warnings.warn("Method requires either iri string or shortFormID to be specified")
+          }
+        return EntitySearcher.getTypes(i, this.ontology).toIterable// But 
     }
 
     def get_version_iri(): String = {
