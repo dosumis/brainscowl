@@ -12,6 +12,7 @@ import org.semanticweb.owlapi.model._
 import org.semanticweb.owlapi.formats.FunctionalSyntaxDocumentFormat
 import org.semanticweb.owlapi.formats.RDFXMLDocumentFormat
 import org.semanticweb.owlapi.formats.TurtleDocumentFormat
+import scala.util.control.Exception
 //import org.slf4j.impl.StaticLoggerBinder // TODO: Add logger import to build.sbt
 
 // See Brain for how to use the following to roll class expressions from MS:
@@ -49,16 +50,22 @@ import java.util.Set
 // TODO: Add in URI string recognition, assuming http or https. 
 // => string values passed to methods may be short form or URI
 
+// Exception spec here - should probably be pushed to a separate file.
+case class UnknownOwlEntityException(message: String) extends Exception(message)
+
 class BrainScowl (
     val file_path: String, val iri_string: String, val base_iri: String) {
     
     def this(file_path: String) {
+    // Construct from file
       this(file_path = file_path, iri_string = "", base_iri = "")
     }
     
     def this(iri_string: String, base_iri: String) {
+     // Construct new ontology from iri_string.
       this(file_path = "", iri_string = iri_string, base_iri = base_iri)
     }
+    // Missing a constructor for loading from an iri !
     
     val factory = OWLManager.getOWLDataFactory
     val manager = OWLManager.createOWLOntologyManager
@@ -90,6 +97,16 @@ class BrainScowl (
     // scala.collection.JavaConversions._ magic takes care of casting onts 
     // to appropriate java type for the following constructor:   
     var bi_sfp = new BidirectionalShortFormProviderAdapter(manager, onts, simple_sfp)
+    
+    def check_then_get(short_form: String) :OWLEntity = {
+      val e = this.bi_sfp.getEntity(short_form)
+      if (e == null) {
+        throw UnknownOwlEntityException(s"Unknown OWL Entity ${short_form}")
+      }
+      else {
+        return e
+      }
+    }
       
     def add_axiom(owl_axiom: OWLAxiom) {
       this.manager.addAxiom(this.ontology, owl_axiom)
@@ -112,18 +129,18 @@ class BrainScowl (
     
    def getAnnotationsOnEntity (query_short_form: String) 
    : Array[OWLAnnotation] = {
-      val e = bi_sfp.getEntity(query_short_form)
+      val e = check_then_get(query_short_form)
       val annotations =  EntitySearcher.getAnnotations(e, ontology)
       return annotations.asScala.toArray      
    }
    
    def getSpecAnnotationsOnEntity (query_short_form: String, ap_short_form: String) 
    : Array[OWLAnnotation] = {
-      val e = bi_sfp.getEntity(query_short_form)
-      val ap = bi_sfp.getEntity(ap_short_form).asOWLAnnotationProperty()
-      val annotations =  EntitySearcher.getAnnotations(e, ontology, ap)
+      val ap = check_then_get(ap_short_form).asOWLAnnotationProperty()
+      val e = check_then_get(query_short_form)
+      val annotations = EntitySearcher.getAnnotations(e, ontology, ap)
       return annotations.asScala.toArray
-   }
+      }
    
    def getSpecTextAnnotationsOnEntity (query_short_form: String, ap_short_form: String) 
      : ArrayBuffer[String] = {
