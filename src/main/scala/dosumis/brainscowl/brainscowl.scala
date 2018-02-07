@@ -1,5 +1,6 @@
 package dosumis.brainscowl
 
+import org.phenoscape.scowl._
 import org.semanticweb.elk.owlapi.ElkReasonerFactory
 import org.semanticweb.owlapi.apibinding.OWLManager
 import org.semanticweb.owlapi.reasoner.InferenceType
@@ -26,7 +27,7 @@ import collection.JavaConverters._
 
 import collection.mutable.ArrayBuffer
 import java.io.File
-import java.util.Set
+//import java.util.Set
 
 //var fu = ScowlBrain() # No ontology initialised. But has factory and manager.
 //var fu = BrainScowl('owl file uri', 'default base URI') Providing an owl file URI initilises ontology.
@@ -83,7 +84,7 @@ class BrainScowl (
     var ontology = if (this.file_path.isEmpty) {
         OWLManager.createOWLOntologyManager.createOntology(IRI.create(this.iri_string))
       } else {
-        manager.loadOntologyFromOntologyDocument(new File(file_path))
+        manager.loadOntologyFromOntologyDocument(new File(file_path))        
     }
     
     // TODO: make a lookup by label - ideally one that auto-updates
@@ -96,9 +97,10 @@ class BrainScowl (
     private var onts = collection.mutable.Set(ontology) 
     // scala.collection.JavaConversions._ magic takes care of casting onts 
     // to appropriate java type for the following constructor:   
-    var bi_sfp = new BidirectionalShortFormProviderAdapter(manager, onts, simple_sfp)
+    var bi_sfp = new BidirectionalShortFormProviderAdapter(manager, ontology.getImportsClosure(), simple_sfp)
     
     def check_then_get(short_form: String) :OWLEntity = {
+      // Chokes on OWL:Nothing
       val e = this.bi_sfp.getEntity(short_form)
       if (e == null) {
         throw UnknownOwlEntityException(s"Unknown OWL Entity ${short_form}")
@@ -147,6 +149,7 @@ class BrainScowl (
      /** Returns a list of strings that are the values of annotations using 
       *  the annotation property specified using ap_short_form on the owl entity 
       *  specified using query_short_form.  */
+     // Why does this return an array buffer?
      // TODO - add test that value realy is text.
        val ann = this.getSpecAnnotationsOnEntity(query_short_form, ap_short_form)
        val out = ArrayBuffer[String]()
@@ -156,6 +159,11 @@ class BrainScowl (
           }
        }
      return out
+   }
+   
+   def getLabels (query_short_form: String, ap_short_form: String) 
+     : ArrayBuffer[String] = {
+     return this.getSpecTextAnnotationsOnEntity(query_short_form, "label")
    }
     
   
@@ -168,24 +176,61 @@ class BrainScowl (
      return ms_parser.parseClassExpression()
    }
    
+   def remove_nothing(class_set: Set[OWLClass]) : 
+     Set[OWLClass] = { 
+     //* Remove OWL:Nothing from a set of OWLClasses //
+     // Would be better to use immutable and return a new set.
+     val n = Class("http://www.w3.org/2002/07/owl#Nothing")  
+     return class_set.filter(_ != n)
+   }
+   
+   def results_2_short_form(class_set: Set[OWLClass]) : 
+    Set[String] = {
+     /* Takes a set of OWL entities, removes OWL:Nothing (if present) and transforms
+     the rest into a set of shot_form ID strings */
+     val no_nada = this.remove_nothing(class_set)
+     var out = collection.mutable.Set[String]() // mutable for purposes of populating
+     for (c <- no_nada) { out.add( this.bi_sfp.getShortForm(c)) } 
+     return out.toSet // return immutable 
+   }
+   
 //   def getEntityByLabel (label: String) :OWLEntity = {
 //   }
    
    // TODO: All of the following need to take class expressions!
-    def getSubClasses(ms_class_expression: String): Set[OWLClass]  = {
+    def getSubClasses(ms_class_expression: String): Set[String]  = {
       val c = this.ms_string_2_classExpression(ms_class_expression)
-      return this.reasoner.getSubClasses(c, false).getFlattened
+      var result =  this.reasoner.getSubClasses(c, false).getFlattened.toSet
+      // Important to remove OWL Nothing as gets in the way.
+      return this.results_2_short_form(result) 
     }
     
-    def getSuperClasses(ms_class_expression: String): Set[OWLClass]  = {
+    def getSuperClasses(ms_class_expression: String): Set[String]  = {
       val c = this.ms_string_2_classExpression(ms_class_expression)
-      return this.reasoner.getSuperClasses(c, false).getFlattened
+      var result =  this.reasoner.getSuperClasses(c, false).getFlattened.toSet
+      return this.results_2_short_form(result)
     }
     
     def getInstances(ms_class_expression: String): Set[OWLNamedIndividual]  = {
       val c = this.ms_string_2_classExpression(ms_class_expression)
-      return this.reasoner.getInstances(c, false).getFlattened.asScala
+      return this.reasoner.getInstances(c, false).getFlattened.toSet
     }
+    
+    
+    def map2list(term_list: Array[String], ms_query: String): 
+    collection.mutable.Map[String, Set[String]] = {
+      /* Args: 
+      ms_query = Manchester syntax query with short_forms and a single print format slot
+      term_list =  A list of short_form for identifiers for iterating over & filling variable slot 
+      Returns: map with term as key and results of SubClassOf query using filled ms_query.
+      * */
+      var out = collection.mutable.Map[String, Set[String]]()
+      for (t <- term_list) {
+        out(t) = this.getSubClasses(ms_query.format(t))
+      }
+      return out
+    }
+  
     
     def getTypes(iri_string :String = "", sfid :String = ""): 
       Iterable[OWLClassExpression] = {
