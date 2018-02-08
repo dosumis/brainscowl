@@ -1,5 +1,5 @@
 package dosumis.brainscowl
-
+import obo_style._
 import org.phenoscape.scowl._
 import org.semanticweb.elk.owlapi.ElkReasonerFactory
 import org.semanticweb.owlapi.apibinding.OWLManager
@@ -50,6 +50,15 @@ import java.io.File
 
 // TODO: Add in URI string recognition, assuming http or https. 
 // => string values passed to methods may be short form or URI
+
+// TODO: Queries etc should return a map of case objects, keyed on short_form
+// Case objects should be modelled on OBO stanzas: having iri, label, 
+// def (case object with ref list)
+// synonyms (case object with, type, scope, reflist)
+
+// To consider: switch interaction to CURIES?
+
+// TODO: Add search system allowing regex search of labels and synonyms.
 
 // Exception spec here - should probably be pushed to a separate file.
 case class UnknownOwlEntityException(message: String) extends Exception(message)
@@ -176,6 +185,11 @@ class BrainScowl (
      return ms_parser.parseClassExpression()
    }
    
+//   def classExpression_2_ms_string (classExpression: OWLClassExpression) :String = {
+//     val ms_parser = OWLManager.createManchesterParser()  
+//  How to convert class expression to Manchester Syntax expression with short forms?
+//   }
+   
    def remove_nothing(class_set: Set[OWLClass]) : 
      Set[OWLClass] = { 
      //* Remove OWL:Nothing from a set of OWLClasses //
@@ -194,21 +208,64 @@ class BrainScowl (
      return out.toSet // return immutable 
    }
    
+   def OBOise(entities: Set[OWLClass]) : Map[String, term] = {
+     // Only works for classes right now.
+     var out = collection.mutable.Map[String, term]()
+     for (e <- this.remove_nothing(entities)) {
+       val short_form = this.bi_sfp.getShortForm(e)
+       out(short_form) = get_term(e)
+     }
+     return out.toMap
+   }
+ 
+   
+   def get_synonyms(e: OWLEntity): Set[synonym] =  {
+     return Set[synonym]()
+   }
+   
+   def get_xrefs(e: OWLEntity) : Set[String] = {
+     return Set[String]()
+   }
+   
+   def get_term(e: OWLEntity): term = {
+      val ann =  EntitySearcher.getAnnotations(e, this.ontology.getImportsClosure(), this.factory.getRDFSLabel())
+      var labels = collection.mutable.Set[String]()
+      // Remove this test for now?
+      for (a <- ann.toIterable) {
+        labels.add(a.getValue.asLiteral.get.getLiteral) // Should probably make this a try/except to cope with cases where there is no literal
+       }
+      // now to get subjects?
+      val defs = EntitySearcher.getAnnotations(e, this.ontology, AnnotationProperty("http://purl.obolibrary.org/obo/IAO_0000115"))
+      val iri = e.getIRI().toString
+      val d = defn(text = "", xrefs = Set[String]())
+      val etyp = e.getEntityType().getPrintName
+      return term(labels = labels.toArray, 
+                  iri = iri, defn = d, synonyms = this.get_synonyms(e), 
+                  xrefs = this.get_xrefs(e) , OWL_type = etyp, 
+                  short_form = this.bi_sfp.getShortForm(e))
+   }
+
+   
+//   def results_2_obo_case(class_set: Set[OWLEntity]) :Set[object] = {
+//     return Set[Object]
+//  }
+     
+   
 //   def getEntityByLabel (label: String) :OWLEntity = {
 //   }
    
    // TODO: All of the following need to take class expressions!
-    def getSubClasses(ms_class_expression: String): Set[String]  = {
+    def getSubClasses(ms_class_expression: String): Map[String, term]  = {
       val c = this.ms_string_2_classExpression(ms_class_expression)
       var result =  this.reasoner.getSubClasses(c, false).getFlattened.toSet
       // Important to remove OWL Nothing as gets in the way.
-      return this.results_2_short_form(result) 
+      return this.OBOise(result) 
     }
     
-    def getSuperClasses(ms_class_expression: String): Set[String]  = {
+    def getSuperClasses(ms_class_expression: String): Map[String, term]  = {
       val c = this.ms_string_2_classExpression(ms_class_expression)
       var result =  this.reasoner.getSuperClasses(c, false).getFlattened.toSet
-      return this.results_2_short_form(result)
+      return this.OBOise(result) 
     }
     
     def getInstances(ms_class_expression: String): Set[OWLNamedIndividual]  = {
@@ -217,24 +274,34 @@ class BrainScowl (
     }
     
     
-    def map2list(term_list: Array[String], ms_query: String): 
-    collection.mutable.Map[String, Set[String]] = {
+    def map2list(term_list: Map[String, term], ms_query: String): 
+    Map[term, Map[String, term]] = {
       /* Args: 
       ms_query = Manchester syntax query with short_forms and a single print format slot
       term_list =  A list of short_form for identifiers for iterating over & filling variable slot 
       Returns: map with term as key and results of SubClassOf query using filled ms_query.
       * */
-      var out = collection.mutable.Map[String, Set[String]]()
-      for (t <- term_list) {
-        out(t) = this.getSubClasses(ms_query.format(t))
+      var out = collection.mutable.Map[term, Map[String, term]]()
+      for ((k,v) <- term_list) {
+        val sc = this.getSubClasses(ms_query.format(k))
+        out(v) = sc 
       }
-      return out
+      return out.toMap
+    }
+    
+    def sumamrise_term(t: term) :String = {
+      var l = ""
+      if (!t.labels.isEmpty) {
+        l = t.labels(0)
+      }
+      return t.short_form + " ; " + l
     }
   
     
     def getTypes(iri_string :String = "", sfid :String = ""): 
-      Iterable[OWLClassExpression] = {
-        // TODO: Better
+      Set[OWLClassExpression] = {
+        // TODO: Most of code here is really a generalised interface.
+        // should be factored out
         /* iri_string: An iri string referencing an individual
         ont: An owlAPI ontology object for an ontology that 
         includes the referenced individual.
@@ -256,7 +323,8 @@ class BrainScowl (
           // Throw exception here!
             //warnings.warn("Method requires either iri string or shortFormID to be specified")
           }
-        return EntitySearcher.getTypes(i, this.ontology).toIterable// But 
+        val types = EntitySearcher.getTypes(i, this.ontology).toSet
+        return types
     }
 
     def get_version_iri(): String = {
