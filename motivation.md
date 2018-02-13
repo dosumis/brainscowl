@@ -5,13 +5,17 @@
 Scripting to and from OWL typically requires working with short_form IDs.  [Brain](https://github.com/loopasam/Brain/wiki) provides a simple, scripty way to work with OWL that hides the complexity of object types and design patterns in the OWL-API.  But the code-base has become stale and has a number of drawbacks:
 
 * It can be a pain to work with it with full IRIs for both the whole ontology and owl entities: it is all too easy for default values  to get in the way.
-* Its methods for pulling information from OWL (e.g. finding axioms or annotations on a class) are rather limited.
+* Its methods for pulling information from OWL (e.g. returning axioms or annotations on a class) are rather limited.
+
+In the spirit or Brain, interaction via text strings is preferred wherever possible.  This includes axioms, e.g a request for 
+
+But:  it can be useful to have easy access to the 
 
 ## Why Scala?
 
 [Scowl](https://github.com/phenoscape/scowl) provides another straighforward scripty way to write OWL. A mash-up with Brain-type functionality would => plenty of fleflexibility.  Other tools also being written in Scala (e.g. DOSDP parser).
 
-Scala is a bit heavyweight though.  It's a bit too complex (& Java-like) for occasional coders.
+Scala is a bit heavyweight though.  It's a bit too complex (& Java-like) for occasional coders.  The aim should be to simplify with wrapper functions and via consistent choice of data types for passing around collections maps etc.
 
 ### Sketch of scowlBrain
 
@@ -29,7 +33,12 @@ fu.getAnnotations(AP, OWLEntity)
 
 fu.save("file path")
 fu.sleep()
+
 ```
+
+Data types:
+
+
 
 
 ### Exception handling
