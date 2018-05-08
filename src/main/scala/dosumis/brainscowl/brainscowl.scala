@@ -1,5 +1,5 @@
 package dosumis.brainscowl
-import obo_style._
+import dosumis.brainscowl.obo_style._
 import org.phenoscape.scowl._
 import org.semanticweb.elk.owlapi.ElkReasonerFactory
 import org.semanticweb.owlapi.apibinding.OWLManager
@@ -200,8 +200,9 @@ class BrainScowl (
    
    def results_2_short_form(class_set: Set[OWLClass]) : 
     Set[String] = {
-     /* Takes a set of OWL entities, removes OWL:Nothing (if present) and transforms
-     the rest into a set of shot_form ID strings */
+     /* Takes a set of OWL entities, removes OWL:Nothing
+      *  (if present) and transforms
+     the rest into a set of short_form ID strings */
      val no_nada = this.remove_nothing(class_set)
      var out = collection.mutable.Set[String]() // mutable for purposes of populating
      for (c <- no_nada) { out.add( this.bi_sfp.getShortForm(c)) } 
@@ -244,7 +245,15 @@ class BrainScowl (
                   xrefs = this.get_xrefs(e) , OWL_type = etyp, 
                   short_form = this.bi_sfp.getShortForm(e))
    }
-
+   
+   def isSuperClassOf(sub: String, sup: String): Boolean = {
+     this.getSuperClasses(sub).keys.contains(sup)
+   }
+   
+   def inOboMap(entity: String, obomap: Map[String, term]): Boolean = {
+     obomap.keys.contains(entity)
+   true
+   }
    
 //   def results_2_obo_case(class_set: Set[OWLEntity]) :Set[object] = {
 //     return Set[Object]
