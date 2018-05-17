@@ -170,7 +170,7 @@ class BrainScowl (
      return out
    }
    
-   def getLabels (query_short_form: String, ap_short_form: String) 
+   def getLabels (query_short_form: String) 
      : ArrayBuffer[String] = {
      return this.getSpecTextAnnotationsOnEntity(query_short_form, "label")
    }
